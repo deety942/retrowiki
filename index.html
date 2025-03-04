@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroWiki</title>
+    <style>
+        body {
+            background-color: black;
+            color: #00ff00;
+            font-family: "Courier New", monospace;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        input, button {
+            background: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #results {
+            margin-top: 20px;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            width: 100%;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+        a {
+            color: #00ff00 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>RetroWiki</h1>
+    <p>Enter a search term to access knowledge from the past.</p>
+    <input type="text" id="searchTerm" placeholder="Search Wikipedia..." onkeypress="handleKeyPress(event)">
+    <button onclick="searchWiki()">Search</button>
+    <div id="results"></div>
+
+    <script>
+        function searchWiki() {
+            let query = document.getElementById("searchTerm").value;
+            let url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(query)}`;
+            
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    let resultsDiv = document.getElementById("results");
+                    resultsDiv.innerHTML = html;
+                    
+                    // Ensure all links are styled correctly
+                    document.querySelectorAll("#results a").forEach(link => {
+                        link.style.color = "#00ff00";
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    document.getElementById("results").innerHTML = "<p>Error retrieving the article.</p>";
+                });
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                searchWiki();
+            }
+        }
+    </script>
+</body>
+</html>
