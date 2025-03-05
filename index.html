@@ -32,12 +32,40 @@
         a {
             color: #00ff00 !important;
         }
+        h1, h2, h3, h4, h5, h6 {
+            color: #00ff00 !important;
+            text-decoration: underline;
+        }
+        #RetroTitle{
+            color: #00ff00;
+        }
+        #suggestions {
+            position: absolute;
+            background-color: black;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            display: none;
+            text-align: left;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+        }
+
+        #suggestions div {
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        #suggestions div:hover {
+            background-color: #222;
+        }
     </style>
 </head>
 <body>
-    <h1>RetroWiki</h1>
+    <h1 id="RetroTitle">RetroWiki</h1>
     <p>Enter a search term to access knowledge from the past.</p>
-    <input type="text" id="searchTerm" placeholder="Search Wikipedia..." onkeypress="handleKeyPress(event)">
+    <input type="text" id="searchTerm" placeholder="Search..." oninput="getSuggestions()">
+    <div id="suggestions"></div>
     <button onclick="searchWiki()">Search</button>
     <div id="results"></div>
 
@@ -45,28 +73,57 @@
         function searchWiki() {
             let query = document.getElementById("searchTerm").value;
             let url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(query)}`;
-            
+
             fetch(url)
                 .then(response => response.text())
                 .then(html => {
                     let resultsDiv = document.getElementById("results");
                     resultsDiv.innerHTML = html;
-                    
-                    // Ensure all links are styled correctly
+
                     document.querySelectorAll("#results a").forEach(link => {
                         link.style.color = "#00ff00";
+                    });
+                    document.querySelectorAll("#results h1, #results h2, #results h3, #results h4, #results h5, #results h6").forEach(header =>{
+                        header.style.color = "#00ff00";
+                        header.style.textDecoration = "underline";
                     });
                 })
                 .catch(error => {
                     console.error("Error fetching data:", error);
                     document.getElementById("results").innerHTML = "<p>Error retrieving the article.</p>";
                 });
+            document.getElementById("suggestions").style.display = "none";
         }
-
-        function handleKeyPress(event) {
-            if (event.key === "Enter") {
-                searchWiki();
+        function getSuggestions() {
+            let query = document.getElementById("searchTerm").value;
+            if (query.length < 3) {
+                document.getElementById("suggestions").style.display = "none";
+                return;
             }
+            let suggestionUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${encodeURIComponent(query)}&origin=*`;
+            fetch(suggestionUrl)
+                .then(response => response.json())
+                .then(data => {
+                    let suggestionsDiv = document.getElementById("suggestions");
+                    suggestionsDiv.innerHTML = "";
+                    if (data[1].length > 0) {
+                        data[1].forEach(suggestion => {
+                            let suggestionItem = document.createElement("div");
+                            suggestionItem.textContent = suggestion;
+                            suggestionItem.onclick = function() {
+                                document.getElementById("searchTerm").value = suggestion;
+                                searchWiki();
+                            };
+                            suggestionsDiv.appendChild(suggestionItem);
+                        });
+                        suggestionsDiv.style.display = "block";
+                    } else {
+                        suggestionsDiv.style.display = "none";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching suggestions:", error);
+                });
         }
     </script>
 </body>
