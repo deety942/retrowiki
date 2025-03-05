@@ -6,142 +6,233 @@
     <title>RetroWiki</title>
     <style>
         body {
-            background-color: black;
+            background-color: #000;
             color: #00ff00;
             font-family: "Courier New", monospace;
             text-align: center;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            background-image: linear-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+            background-size: 100% 4px;
+            animation: scanline 10s linear infinite;
         }
+
+        @keyframes scanline {
+            0% { background-position-y: 0; }
+            100% { background-position-y: 100%; }
+        }
+
+        #headerContainer {
+            margin-bottom: 20px;
+        }
+
+        #RetroTitle {
+            font-size: 40px;
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+            transition: all 0.3s ease;
+        }
+
+        #RetroTitle:hover {
+            transform: scale(1.05);
+        }
+
+        .home-page-title {
+            font-size: 50px;
+        }
+
+        #searchRow {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
         input, button {
-            background: black;
+            background: #000;
             color: #00ff00;
             border: 1px solid #00ff00;
-            padding: 5px;
-            font-size: 14px;
-            margin: 2px;
+            padding: 8px 12px;
+            font-size: 16px;
+            font-family: "Courier New", monospace;
+            transition: all 0.2s ease;
         }
+
+        input:focus, button:hover {
+            box-shadow: 0 0 8px #00ff00;
+            outline: none;
+        }
+
+        input::placeholder {
+            color: #00aa00;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
         #results {
-            margin-top: 5px;
-            text-align: left;
-            padding: 10px;
+            margin-top: 20px;
+            padding: 20px;
             border: 1px solid #00ff00;
-            width: 100%;
-            height: calc(100vh - 120px);
+            width: 95%;
+            max-width: 1200px;
+            height: calc(100vh - 150px);
             overflow-y: auto;
+            text-align: left;
             display: none;
+            background: #000;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
         }
-        a {
+
+        /* Force Wikipedia content to match retro style */
+        #results * {
+            background-color: #000 !important;
+            color: #00ff00 !important;
+            border-color: #00ff00 !important;
+        }
+
+        /* Specifically target images and their containers */
+        #results img, #results figure, #results div {
+            background-color: #000 !important;
+            border: none !important;
+        }
+
+        /* Ensure no white leaks through captions or wrappers */
+        #results figcaption, #results .thumbinner, #results .mw-parser-output {
+            background-color: #000 !important;
             color: #00ff00 !important;
         }
+
+        a {
+            color: #00ff00 !important;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: #00cc00 !important;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
         h1, h2, h3, h4, h5, h6 {
             color: #00ff00 !important;
             text-decoration: underline;
         }
-        #RetroTitle{
-            color: #00ff00;
-            font-size: 30px;
-            margin: 2px;
-        }
+
         #suggestions {
             position: absolute;
-            background-color: black;
+            top: 150px;
+            background: #000;
             border: 1px solid #00ff00;
             color: #00ff00;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
             display: none;
-            text-align: left;
             left: 50%;
             transform: translateX(-50%);
-            width: 300px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            z-index: 10;
         }
+
         #suggestions div {
-            padding: 5px;
+            padding: 8px;
             cursor: pointer;
+            transition: background 0.2s ease;
         }
+
         #suggestions div:hover {
-            background-color: #222;
+            background: #003300;
         }
-        h1{
-            margin-bottom: 2px;
-        }
-        p{
-            margin: 1px;
-        }
-        .home-page-title{
-            font-size: 40px;
-        }
-        #searchRow{
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-        }
-        #searchRow input, #searchRow button{
-            margin: 2px;
+
+        @media (max-width: 600px) {
+            #searchRow {
+                flex-direction: column;
+            }
+            #RetroTitle {
+                font-size: 30px;
+            }
+            #results {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div id = "headerContainer">
+    <div id="headerContainer">
         <h1 id="RetroTitle" class="home-page-title">RetroWiki</h1>
-        <div id = "searchRow">
+        <div id="searchRow">
             <button onclick="goHome()">Home</button>
             <input type="text" id="searchTerm" placeholder="Search..." oninput="getSuggestions()" onkeypress="handleKeyPress(event)">
             <button onclick="searchWiki()">Search</button>
         </div>
     </div>
-    <p></p>
     <div id="suggestions"></div>
     <div id="results"></div>
 
     <script>
         function searchWiki() {
-            let query = document.getElementById("searchTerm").value;
-            let url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(query)}`;
-            document.getElementById("results").style.display = "block";
+            const query = document.getElementById("searchTerm").value.trim();
+            if (!query) return;
+            const url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(query)}`;
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.style.display = "block";
             document.getElementById("RetroTitle").classList.remove("home-page-title");
             document.body.style.justifyContent = "flex-start";
             fetch(url)
                 .then(response => response.text())
                 .then(html => {
-                    let resultsDiv = document.getElementById("results");
                     resultsDiv.innerHTML = html;
-
-                    document.querySelectorAll("#results a").forEach(link => {
-                        link.style.color = "#00ff00";
-                    });
-                    document.querySelectorAll("#results h1, #results h2, #results h3, #results h4, #results h5, #results h6").forEach(header =>{
-                        header.style.color = "#00ff00";
-                        header.style.textDecoration = "underline";
-                    });
+                    styleResults();
                 })
                 .catch(error => {
                     console.error("Error fetching data:", error);
-                    document.getElementById("results").innerHTML = "<p>Error retrieving the article.</p>";
+                    resultsDiv.innerHTML = "<p>Error retrieving the article.</p>";
                 });
             document.getElementById("suggestions").style.display = "none";
         }
+
+        function styleResults() {
+            document.querySelectorAll("#results a").forEach(link => {
+                link.style.color = "#00ff00";
+                link.style.textDecoration = "none";
+            });
+            document.querySelectorAll("#results h1, #results h2, #results h3, #results h4, #results h5, #results h6").forEach(header => {
+                header.style.color = "#00ff00";
+                header.style.textDecoration = "underline";
+            });
+            document.querySelectorAll("#results *").forEach(element => {
+                element.style.backgroundColor = "#000";
+            });
+        }
+
         function getSuggestions() {
-            let query = document.getElementById("searchTerm").value;
+            const query = document.getElementById("searchTerm").value.trim();
+            const suggestionsDiv = document.getElementById("suggestions");
             if (query.length < 3) {
-                document.getElementById("suggestions").style.display = "none";
+                suggestionsDiv.style.display = "none";
                 return;
             }
-            let suggestionUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${encodeURIComponent(query)}&origin=*`;
+            const suggestionUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=${encodeURIComponent(query)}&origin=*`;
             fetch(suggestionUrl)
                 .then(response => response.json())
                 .then(data => {
-                    let suggestionsDiv = document.getElementById("suggestions");
                     suggestionsDiv.innerHTML = "";
                     if (data[1].length > 0) {
                         data[1].forEach(suggestion => {
-                            let suggestionItem = document.createElement("div");
+                            const suggestionItem = document.createElement("div");
                             suggestionItem.textContent = suggestion;
-                            suggestionItem.onclick = function() {
+                            suggestionItem.onclick = () => {
                                 document.getElementById("searchTerm").value = suggestion;
                                 searchWiki();
                             };
@@ -152,20 +243,21 @@
                         suggestionsDiv.style.display = "none";
                     }
                 })
-                .catch(error => {
-                    console.error("Error fetching suggestions:", error);
-                });
+                .catch(error => console.error("Error fetching suggestions:", error));
         }
+
         function handleKeyPress(event) {
-            if (event.key === "Enter") {
-                searchWiki();
-            }
+            if (event.key === "Enter") searchWiki();
         }
-        function goHome(){
-            document.getElementById("results").style.display = "none";
-            document.getElementById("results").innerHTML = "";
+
+        function goHome() {
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.style.display = "none";
+            resultsDiv.innerHTML = "";
             document.getElementById("RetroTitle").classList.add("home-page-title");
             document.body.style.justifyContent = "center";
+            document.getElementById("searchTerm").value = "";
+            document.getElementById("suggestions").style.display = "none";
         }
     </script>
 </body>
